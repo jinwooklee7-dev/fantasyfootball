@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% import "macros.html" as m %}
+{% block title %}{{ player.display_name }} · ffdash{% endblock %}
+{% block content %}
+<h1>
+  {% if player.current_team and teams.get(player.current_team) %}
+    {{ m.badge(teams, player.current_team, 28) }}
+  {% endif %}
+  {{ player.display_name }}
+  <span class="muted">{{ player.position or '?' }} · {{ player.current_team or 'FA' }}</span>
+</h1>
+<section class="panel">
+  <div class="panel-head">
+    <h2>Trailing log <span class="muted small">{{ season }}</span></h2>
+    {{ m.stamp(fresh, 'player_stats', 'stats') }}
+  </div>
+  {% if rows %}
+    {# Columns follow the position: passers get attempts and pass yards, not a
+       target share they will never have. #}
+    <table class="usage">
+      <thead>
+        {% if group == 'passing' %}
+          <tr>
+            <th>wk</th><th>opp</th><th class="r">snap%</th>
+            <th class="r">att</th><th class="r">cmp</th><th class="r">pass yd</th>
+            <th class="r">td</th><th class="r">int</th>
+            <th class="r">car</th><th class="r">rush yd</th>
+            <th class="r">rz</th><th class="r">{{ scoring_label }}</th>
+          </tr>
+        {% elif group == 'rushing' %}
+          <tr>
+            <th>wk</th><th>opp</th><th class="r">snap%</th>
+            <th class="r">car</th><th class="r">rush yd</th><th class="r">td</th>
+            <th class="r">tgt</th><th class="r">rec</th><th class="r">rec yd</th>
+            <th class="r">rz</th><th class="r">i10</th><th class="r">{{ scoring_label }}</th>
+          </tr>
+        {% else %}
+          <tr>
+            <th>wk</th><th>opp</th><th class="r">snap%</th>
+            <th class="r">tgt</th><th class="r">tgt%</th>
+            <th class="r">rec</th><th class="r">rec yd</th><th class="r">td</th>
+            <th class="r">car</th><th class="r">rush yd</th>
+            <th class="r">rz</th><th class="r">i10</th><th class="r">{{ scoring_label }}</th>
+          </tr>
+        {% endif %}
+      </thead>
+      <tbody>
+        {% for r in rows %}
+          <tr>
+            <td>{{ r.week }}</td>
+            <td>{{ r.opponent or '—' }}</td>
+            <td class="r">{{ r.offense_pct|pct }}</td>
+            {% if group == 'passing' %}
+              <td class="r">{{ r.attempts|num }}</td>
+              <td class="r">{{ r.completions|num }}</td>
+              <td class="r">{{ r.passing_yards|num }}</td>
+              <td class="r">{{ r.passing_tds|num }}</td>
+              <td class="r">{{ r.interceptions|num }}</td>
+              <td class="r">{{ r.carries|num }}</td>
+              <td class="r">{{ r.rushing_yards|num }}</td>
+              <td class="r">{{ r.rz_touches|num }}</td>
+            {% elif group == 'rushing' %}
+              <td class="r">{{ r.carries|num }}</td>
+              <td class="r">{{ r.rushing_yards|num }}</td>
+              <td class="r">{{ r.rushing_tds|num }}</td>
+              <td class="r">{{ r.targets|num }}</td>
+              <td class="r">{{ r.receptions|num }}</td>
+              <td class="r">{{ r.receiving_yards|num }}</td>
+              <td class="r">{{ r.rz_touches|num }}</td>
+              <td class="r">{{ r.inside10_touches|num }}</td>
+            {% else %}
+              <td class="r">{{ r.targets|num }}</td>
+              <td class="r">{{ r.target_share|pct }}</td>
+              <td class="r">{{ r.receptions|num }}</td>
+              <td class="r">{{ r.receiving_yards|num }}</td>
+              <td class="r">{{ r.receiving_tds|num }}</td>
+              <td class="r">{{ r.carries|num }}</td>
+              <td class="r">{{ r.rushing_yards|num }}</td>
+              <td class="r">{{ r.rz_touches|num }}</td>
+              <td class="r">{{ r.inside10_touches|num }}</td>
+            {% endif %}
+            <td class="r strong"><span class="pts"
+                {%- for key, value in r.points_by_format.items() %} data-{{ key }}="{{ value|num }}"{% endfor %}
+                >{{ r.points|num }}</span></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p class="empty">No weeks recorded this season.</p>
+  {% endif %}
+</section>
+<p><a href="{{ url('index') }}">Back to the slate</a></p>
+{% endblock %}

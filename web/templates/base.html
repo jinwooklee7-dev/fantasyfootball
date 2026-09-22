@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}ffdash{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url('static', path='app.css') }}">
+  <script src="{{ url('static', path='scoring.js') }}" defer></script>
+</head>
+<body data-scoring="{{ scoring or 'ppr' }}">
+  <header class="topbar">
+    <a class="brand" href="{{ url('index') }}">ffdash</a>
+    {% block topbar %}{% endblock %}
+    {% if scoring_formats %}
+      {# Scoring switch. Full PPR is what nflverse stores; the others are that
+         minus the reception bonus, so there is nothing to recompute. #}
+      <nav class="scorenav" title="Scoring format">
+        {% for key, meta in scoring_formats.items() %}
+          <button type="button" class="scorelink {{ 'on' if key == scoring else '' }}"
+                  data-scoring="{{ key }}" title="{{ meta.long }}">{{ meta.label }}</button>
+        {% endfor %}
+      </nav>
+    {% endif %}
+  </header>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="footer">
+    {% if fresh %}
+      <span class="muted">ingest:</span>
+      {% for source, row in fresh|dictsort %}
+        <span class="chip {{ 'chip-stale' if row.stale else '' }}"
+              title="{{ row.finished_at }}{{ ' — overdue; nothing is scheduled unless you installed deploy/crontab.example' if row.stale else '' }}">
+          {{ source }} {{ row.finished_at|age }}
+        </span>
+      {% endfor %}
+      {% if fresh.values()|selectattr('stale')|list %}
+        <span class="stale-note">
+          Some data is overdue — run <code>uv run scripts/refresh_all.py</code>,
+          or install <code>deploy/crontab.example</code> so it updates itself.
+        </span>
+      {% endif %}
+    {% endif %}
+
+    {# CC-BY attribution. Required by both upstream licences, on every page that
+       shows their data -- not optional once anyone else can see this. #}
+    <span class="attribution">
+      NFL data from
+      <a href="https://github.com/nflverse/nflverse-data" rel="noopener">nflverse</a>
+      (<a href="https://creativecommons.org/licenses/by/4.0/" rel="noopener">CC-BY 4.0</a>).
+      Weather from
+      <a href="https://open-meteo.com/" rel="noopener">Open-Meteo</a>
+      (<a href="https://creativecommons.org/licenses/by/4.0/" rel="noopener">CC-BY 4.0</a>).
+      Not affiliated with the NFL. Non-commercial use only.
+    </span>
+  </footer>
+</body>
+</html>

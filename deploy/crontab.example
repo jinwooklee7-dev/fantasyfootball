@@ -1,0 +1,65 @@
+# ffdash ingest schedule. Plain cron, no Celery, no Airflow.
+#
+#   crontab -e      and paste, after setting FFDASH below
+#
+# All times are UTC. The one moment latency actually matters is the Sunday
+# 11:30am ET window before the 1pm kickoffs (15:30 UTC in summer time).
+
+FFDASH=/path/to/ffdash
+SHELL=/bin/bash
+PATH=/usr/local/bin:/usr/bin:/bin
+
+# --- schedules and the free betting lines ------------------------------------
+# Lines move. Every 15 minutes in season; the ingest only writes a row when the
+# number actually changed, so this does not bloat the odds history.
+*/15 * * * *  cd $FFDASH && uv run scripts/ingest_schedules.py  >> logs/schedules.log 2>&1
+
+# --- player stats ------------------------------------------------------------
+# Nightly.
+17 8 * * *    cd $FFDASH && uv run scripts/ingest_player_stats.py >> logs/stats.log 2>&1
+
+# STAT CORRECTIONS. Separate entry, deliberately, not a flag on the nightly run.
+# The NFL issues corrections after games are scored and nflverse recommends
+# re-pulling in the Wednesday->Thursday overnight window. DO NOT REMOVE THIS.
+# If our Week N numbers disagree with everyone else's, this is why.
+30 7 * * 4    cd $FFDASH && uv run scripts/ingest_player_stats.py --corrections >> logs/corrections.log 2>&1
+
+# --- snaps: 4x daily ---------------------------------------------------------
+25 6,12,18,23 * * *  cd $FFDASH && uv run scripts/ingest_snaps.py >> logs/snaps.log 2>&1
+
+# --- depth charts: daily (append-only event log) -----------------------------
+40 9 * * *    cd $FFDASH && uv run scripts/ingest_depth_charts.py >> logs/depth.log 2>&1
+
+# --- injuries: daily after 07:00 UTC -----------------------------------------
+# Run daily so the Wed/Thu/Fri practice progression builds up one snapshot per
+# day. Running it more often than daily just overwrites the same day's row.
+5 8 * * *     cd $FFDASH && uv run scripts/ingest_injuries.py >> logs/injuries.log 2>&1
+
+# Friday second pass: final game designations land Friday afternoon ET.
+0 22 * * 5    cd $FFDASH && uv run scripts/ingest_injuries.py >> logs/injuries.log 2>&1
+
+# --- roster status: IR, practice squad, and the gameday inactives ------------
+# The injury report does NOT carry IR -- a player placed on it disappears from
+# the feed entirely. This is the only source for that, and for the inactives.
+20 8 * * *    cd $FFDASH && uv run scripts/ingest_rosters.py >> logs/rosters.log 2>&1
+
+# Sunday inactives window: the list lands ~90 minutes before kickoff, so sweep
+# it through the late morning and early afternoon ET.
+*/20 15-21 * * 0  cd $FFDASH && uv run scripts/ingest_rosters.py >> logs/rosters.log 2>&1
+
+# --- next gen stats: nightly -------------------------------------------------
+50 8 * * *    cd $FFDASH && uv run scripts/ingest_nextgen.py >> logs/nextgen.log 2>&1
+
+# --- players / crosswalk: weekly ---------------------------------------------
+# Build this BEFORE any stats ingest can resolve new rookies.
+0 6 * * 2     cd $FFDASH && uv run scripts/ingest_players.py >> logs/players.log 2>&1
+
+# --- weather -----------------------------------------------------------------
+# Daily for the week ahead...
+0 11 * * *    cd $FFDASH && uv run scripts/ingest_weather.py >> logs/weather.log 2>&1
+# ...then hourly inside 24 hours of kickoff, all day Saturday and Sunday.
+0 * * * 0,6   cd $FFDASH && uv run scripts/ingest_weather.py --hours 24 >> logs/weather.log 2>&1
+
+# --- the web app -------------------------------------------------------------
+# Not a cron job. Run it under systemd, or by hand:
+#   uv run uvicorn web.app:app --host 127.0.0.1 --port 8077

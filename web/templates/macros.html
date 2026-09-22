@@ -1,0 +1,261 @@
+{# Sparklines. A shape beats a row of numbers for "is this trending up?" #}
+
+{% macro sparkline(values, width=64, height=18, klass="") %}
+  {%- set clean = values | reject("none") | list -%}
+  {%- if clean | length < 2 -%}
+    <span class="spark-empty" title="not enough weeks">—</span>
+  {%- else -%}
+    {%- set lo = clean | min -%}
+    {%- set hi = clean | max -%}
+    {%- set span = (hi - lo) if (hi - lo) > 0 else 1 -%}
+    {%- set step = width / (clean | length - 1) -%}
+    <svg class="spark {{ klass }}" viewBox="0 0 {{ width }} {{ height }}"
+         width="{{ width }}" height="{{ height }}" aria-hidden="true"
+         preserveAspectRatio="none">
+      <polyline points="
+        {%- for v in clean -%}
+          {{ '%.1f' % (loop.index0 * step) }},{{ '%.1f' % (height - 2 - ((v - lo) / span) * (height - 4)) }}
+        {% endfor -%}
+      " />
+      {%- set last = clean | last -%}
+      <circle cx="{{ '%.1f' % width }}"
+              cy="{{ '%.1f' % (height - 2 - ((last - lo) / span) * (height - 4)) }}"
+              r="1.8" />
+    </svg>
+  {%- endif -%}
+{% endmacro %}
+
+{# Points, in every scoring format. The switch reads the data attributes, so it
+   works on the generated site where there is no server to read a query string. #}
+{% macro points_cell(p) %}
+  <span class="val strong pts"
+        {% for key, value in p.points_by_format.items() %}
+          data-{{ key }}="{{ value|num }}"
+        {% endfor %}>{{ p.avg_points|num }}</span>
+  {{ multi_sparkline(p.series) }}
+{% endmacro %}
+
+{# One polyline per scoring format; CSS shows the active one. The shapes really
+   do differ -- standard scoring flattens a high-reception week. #}
+{% macro multi_sparkline(series) %}
+  {%- for key in ['ppr', 'half', 'std'] -%}
+    <span class="spark-for spark-{{ key }}">
+      {{- sparkline(series | map(attribute='points_by_format') | map(attribute=key) | list) -}}
+    </span>
+  {%- endfor -%}
+{% endmacro %}
+
+{# A "last updated" stamp. Every panel carries one. #}
+{% macro stamp(fresh, source, label=None) %}
+  {%- set row = fresh.get(source) -%}
+  <span class="stamp" title="{{ row.finished_at if row else 'never run' }}">
+    {{ label or source }} · {{ row.finished_at|age if row else 'never' }}
+  </span>
+{% endmacro %}
+
+{# Team badge: cached logo, or a coloured initials chip when no file exists.
+   The logo is served locally so a dead CDN cannot blank the page. #}
+{% macro badge(teams, abbr, size=22) %}
+  {%- set t = teams.get(abbr) -%}
+  {%- if t and t.has_logo -%}
+    {# Not lazy-loaded: these are small local files, and deferring them just
+       makes badges pop in a row at a time as you scroll. #}
+    <img class="tlogo" src="{{ url('static', path='logos/' ~ abbr ~ '.png') }}"
+         width="{{ size }}" height="{{ size }}"
+         alt="" title="{{ t.full_name }}" decoding="async">
+  {%- else -%}
+    <span class="tlogo tlogo-fallback"
+          style="width:{{ size }}px;height:{{ size }}px;
+                 background:{{ t.color if t else 'var(--muted)' }}"
+          title="{{ t.full_name if t else abbr }}">{{ abbr[:3] }}</span>
+  {%- endif -%}
+{% endmacro %}
+
+{# Badge + abbreviation, underlined in the team's colour. #}
+{% macro team_tag(teams, abbr, size=22, nick=False) %}
+  {%- set t = teams.get(abbr) -%}
+  <span class="tteam" style="--team:{{ t.color if t else 'var(--ink)' }}">
+    {{ badge(teams, abbr, size) }}
+    <span class="tabbr">{{ t.nick if (nick and t) else abbr }}</span>
+  </span>
+{% endmacro %}
+
+{# ---------------------------------------------------------------- usage tables
+
+   One table per position group. A quarterback is judged on attempts, completion
+   rate and passing yards plus what he adds with his legs; a back on carries and
+   the touches near the goal line; a receiver on target share. Sharing one set of
+   columns across all three makes every row harder to read.                    #}
+
+{% macro usage_passing(players, series_key='passing_yards') %}
+  <table class="usage">
+    <thead>
+      <tr>
+        <th>pos</th><th>player</th>
+        <th class="r metric">snap%</th>
+        <th class="r">att</th><th class="r">cmp%</th>
+        <th class="r metric">pass yds</th>
+        <th class="r">td</th><th class="r">int</th>
+        <th class="r">car</th><th class="r">rush yds</th>
+        <th class="r">rz</th>
+        <th class="r metric score-head">{{ scoring_label }}/g</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in players %}
+        <tr class="{{ 'unavailable' if p.avail and p.avail.severity == 'out' else '' }}">
+          <td class="pos">{{ p.position }}</td>
+          <td class="name">{{ player_name(p) }}</td>
+          <td class="r metric">
+            <span class="val">{{ p.avg_snap_pct|pct }}</span>
+            {{ sparkline(p.series | map(attribute='offense_pct') | list) }}
+          </td>
+          <td class="r">{{ p.tot_attempts|num }}</td>
+          <td class="r">{{ p.completion_pct|pct }}</td>
+          <td class="r metric">
+            <span class="val">{{ p.tot_passing_yards|num }}</span>
+            {{ sparkline(p.series | map(attribute=series_key) | list) }}
+          </td>
+          <td class="r">{{ p.tot_passing_tds|num }}</td>
+          <td class="r">{{ p.tot_interceptions|num }}</td>
+          <td class="r">{{ p.tot_carries|num }}</td>
+          <td class="r">{{ p.tot_rushing_yards|num }}</td>
+          <td class="r">{{ p.tot_rz|num }}</td>
+          <td class="r metric">
+            {{ points_cell(p) }}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endmacro %}
+
+{% macro usage_rushing(players) %}
+  <table class="usage">
+    <thead>
+      <tr>
+        <th>pos</th><th>player</th>
+        <th class="r metric">snap%</th>
+        <th class="r metric">car</th><th class="r">rush yds</th><th class="r">td</th>
+        <th class="r">tgt</th><th class="r">rec</th><th class="r">rec yds</th>
+        <th class="r">rz</th><th class="r">i10</th>
+        <th class="r metric score-head">{{ scoring_label }}/g</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in players %}
+        <tr class="{{ 'unavailable' if p.avail and p.avail.severity == 'out' else '' }}">
+          <td class="pos">{{ p.position }}</td>
+          <td class="name">{{ player_name(p) }}</td>
+          <td class="r metric">
+            <span class="val">{{ p.avg_snap_pct|pct }}</span>
+            {{ sparkline(p.series | map(attribute='offense_pct') | list) }}
+          </td>
+          <td class="r metric">
+            <span class="val">{{ p.tot_carries|num }}</span>
+            {{ sparkline(p.series | map(attribute='carries') | list) }}
+          </td>
+          <td class="r">{{ p.tot_rushing_yards|num }}</td>
+          <td class="r">{{ p.tot_rushing_tds|num }}</td>
+          <td class="r">{{ p.tot_targets|num }}</td>
+          <td class="r">{{ p.tot_receptions|num }}</td>
+          <td class="r">{{ p.tot_receiving_yards|num }}</td>
+          <td class="r">{{ p.tot_rz|num }}</td>
+          <td class="r">{{ p.tot_in10|num }}</td>
+          <td class="r metric">
+            {{ points_cell(p) }}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endmacro %}
+
+{% macro usage_receiving(players) %}
+  <table class="usage">
+    <thead>
+      <tr>
+        <th>pos</th><th>player</th>
+        <th class="r metric">snap%</th>
+        <th class="r metric">tgt share</th>
+        <th class="r">air yd%</th>
+        <th class="r">tgt</th><th class="r">rec</th>
+        <th class="r">rec yds</th><th class="r">td</th>
+        <th class="r">rz</th><th class="r">i10</th>
+        <th class="r metric score-head">{{ scoring_label }}/g</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in players %}
+        <tr class="{{ 'unavailable' if p.avail and p.avail.severity == 'out' else '' }}">
+          <td class="pos">{{ p.position }}</td>
+          <td class="name">{{ player_name(p) }}</td>
+          <td class="r metric">
+            <span class="val">{{ p.avg_snap_pct|pct }}</span>
+            {{ sparkline(p.series | map(attribute='offense_pct') | list) }}
+          </td>
+          <td class="r metric">
+            <span class="val">{{ p.avg_target_share|pct }}</span>
+            {{ sparkline(p.series | map(attribute='target_share') | list) }}
+          </td>
+          <td class="r">{{ p.avg_air_yards_share|pct }}</td>
+          <td class="r">{{ p.tot_targets|num }}</td>
+          <td class="r">{{ p.tot_receptions|num }}</td>
+          <td class="r">{{ p.tot_receiving_yards|num }}</td>
+          <td class="r">{{ p.tot_receiving_tds|num }}</td>
+          <td class="r">{{ p.tot_rz|num }}</td>
+          <td class="r">{{ p.tot_in10|num }}</td>
+          <td class="r metric">
+            {{ points_cell(p) }}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endmacro %}
+
+{% macro usage_group(key, players) %}
+  {%- if key == 'passing' -%}{{ usage_passing(players) }}
+  {%- elif key == 'rushing' -%}{{ usage_rushing(players) }}
+  {%- else -%}{{ usage_receiving(players) }}
+  {%- endif -%}
+{% endmacro %}
+
+{# Availability pill: IR / INACTIVE / OUT in red, designations in amber.
+   Sits directly beside the name, because a player on IR halfway down a usage
+   table is the single most expensive thing to miss on this page. #}
+{% macro avail_pill(avail) %}
+  {%- if avail -%}
+    <span class="avail avail-{{ avail.severity }}" title="{{ avail.detail }}">
+      {{ avail.label }}{% if avail.body_part %} <span class="avail-body">{{ avail.body_part }}</span>{% endif %}
+    </span>
+  {%- endif -%}
+{% endmacro %}
+
+{# "Missed wk 2" — he did not play last week, whatever his status says today.
+   Distinct from a current designation on purpose: it is history, not a ruling,
+   but a starter who sat seven days ago is still the thing you want to know. #}
+{% macro missed_pill(missed) %}
+  {%- if missed -%}
+    <span class="avail avail-missed" title="{{ missed.detail }}">
+      missed wk {{ missed.week }}{% if missed.reason %} <span class="avail-body">{{ missed.reason }}</span>{% endif %}
+    </span>
+  {%- endif -%}
+{% endmacro %}
+
+{# Player name plus whatever is wrong with him. #}
+{% macro player_name(p) %}
+  <a href="{{ url('player', player_id=p.player_id) }}">{{ p.display_name }}</a>
+  {{ avail_pill(p.avail) }}
+  {%- if not (p.avail and p.avail.severity == 'out') -%}
+    {{ missed_pill(p.missed) }}
+  {%- endif -%}
+{% endmacro %}
+
+{% macro status_pill(game_status, practice_status) %}
+  {%- if game_status -%}
+    <span class="pill pill-{{ game_status|lower }}">{{ game_status }}</span>
+  {%- elif practice_status -%}
+    <span class="pill pill-practice">{{ practice_status }}</span>
+  {%- endif -%}
+{% endmacro %}

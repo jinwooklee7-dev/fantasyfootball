@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "ffdash",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": ["run", "uvicorn", "web.app:app", "--port", "8077"],
+      "port": 8077
+    }
+  ]
+}

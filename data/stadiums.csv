@@ -1,0 +1,59 @@
+stadium_id,name,team_abbrs,latitude,longitude,roof,timezone,notes
+# ------------------------------------------------------------------------------
+# KEYED ON THE NFLVERSE stadium_id. The original seed file used its own slugs
+# ("mercedes_benz", "mt_bank"); those join to nothing, because load_schedules()
+# emits ids like ATL97 and BAL00. Re-keyed so the game -> stadium join works at
+# all. The old slug is kept in the alias column for traceability.
+#
+# STILL BEST-EFFORT — VERIFY BEFORE THE SEASON. Coordinates are stadium
+# centroids. Known churn to check:
+#   BUF00  new stadium in Orchard Park replacing the old Highmark Stadium
+#   JAX00  EverBank is mid-renovation; home games may relocate
+#   NAS00  new Nissan Stadium (domed) replaces the open-air one
+# "retractable" is UNKNOWN until gameday. Treat it as outdoor-with-caveat and
+# update game.roof_state once the league announces.
+#
+# International venues were absent from the original file entirely; without them
+# every overseas game silently lost its weather. Added below, same caveat.
+# ------------------------------------------------------------------------------
+PHO00,State Farm Stadium,ARI,33.5276,-112.2626,retractable,America/Phoenix,alias=state_farm
+ATL97,Mercedes-Benz Stadium,ATL,33.7554,-84.4009,retractable,America/New_York,alias=mercedes_benz
+BAL00,M&T Bank Stadium,BAL,39.2780,-76.6227,open,America/New_York,alias=mt_bank
+BUF00,Highmark Stadium,BUF,42.7738,-78.7870,open,America/New_York,alias=highmark VERIFY new stadium
+CAR00,Bank of America Stadium,CAR,35.2258,-80.8528,open,America/New_York,alias=bofa
+CHI98,Soldier Field,CHI,41.8623,-87.6167,open,America/Chicago,alias=soldier
+CIN00,Paycor Stadium,CIN,39.0955,-84.5161,open,America/New_York,alias=paycor
+CLE00,Huntington Bank Field,CLE,41.5061,-81.6995,open,America/New_York,alias=huntington_bank
+DAL00,AT&T Stadium,DAL,32.7473,-97.0945,retractable,America/Chicago,alias=att
+DEN00,Empower Field at Mile High,DEN,39.7439,-105.0201,open,America/Denver,alias=empower altitude
+DET00,Ford Field,DET,42.3400,-83.0456,dome,America/New_York,alias=ford_field
+GNB00,Lambeau Field,GB,44.5013,-88.0622,open,America/Chicago,alias=lambeau cold weather
+HOU00,NRG Stadium,HOU,29.6847,-95.4107,retractable,America/Chicago,alias=nrg
+IND00,Lucas Oil Stadium,IND,39.7601,-86.1639,retractable,America/Indiana/Indianapolis,alias=lucas_oil
+JAX00,EverBank Stadium,JAX,30.3239,-81.6373,open,America/New_York,alias=everbank VERIFY renovation
+KAN00,GEHA Field at Arrowhead,KC,39.0489,-94.4839,open,America/Chicago,alias=arrowhead
+VEG00,Allegiant Stadium,LV,36.0909,-115.1833,dome,America/Los_Angeles,alias=allegiant
+LAX01,SoFi Stadium,"LA,LAR,LAC",33.9535,-118.3392,fixed_open_sides,America/Los_Angeles,alias=sofi roof covers but sides open
+MIA00,Hard Rock Stadium,MIA,25.9580,-80.2389,open,America/New_York,alias=hard_rock canopy over seats not field; heat
+MIN01,U.S. Bank Stadium,MIN,44.9736,-93.2575,dome,America/Chicago,alias=us_bank
+BOS00,Gillette Stadium,NE,42.0909,-71.2643,open,America/New_York,alias=gillette wind
+NOR00,Caesars Superdome,NO,29.9511,-90.0812,dome,America/Chicago,alias=superdome
+NYC01,MetLife Stadium,"NYG,NYJ",40.8135,-74.0745,open,America/New_York,alias=metlife wind
+PHI00,Lincoln Financial Field,PHI,39.9008,-75.1675,open,America/New_York,alias=lincoln_financial
+PIT00,Acrisure Stadium,PIT,40.4468,-80.0158,open,America/New_York,alias=acrisure wind
+SFO01,Levi's Stadium,SF,37.4033,-121.9694,open,America/Los_Angeles,alias=levis
+SEA00,Lumen Field,SEA,47.5952,-122.3316,open,America/Los_Angeles,alias=lumen partial roof over seats
+TAM00,Raymond James Stadium,TB,27.9759,-82.5033,open,America/New_York,alias=raymond_james
+NAS00,Nissan Stadium,TEN,36.1665,-86.7713,open,America/Chicago,alias=nissan VERIFY new domed stadium
+WAS00,Northwest Stadium,WAS,38.9076,-76.8645,open,America/New_York,alias=northwest
+# --- international / neutral site ---
+LON00,Wembley Stadium,,51.5560,-0.2795,open,Europe/London,roof covers seating only; pitch exposed
+LON02,Tottenham Hotspur Stadium,,51.6043,-0.0664,open,Europe/London,
+GER00,Allianz Arena,,48.2188,11.6247,open,Europe/Berlin,
+MUN01,Allianz Arena,,48.2188,11.6247,open,Europe/Berlin,same venue as GER00 under a different id
+MAD01,Santiago Bernabeu,,40.4531,-3.6883,retractable,Europe/Madrid,
+MEL00,Melbourne Cricket Ground,,-37.8200,144.9834,open,Australia/Melbourne,southern hemisphere; check season
+MEX00,Estadio Azteca,,19.3029,-99.1505,open,America/Mexico_City,altitude 7200ft
+PAR00,Stade de France,,48.9245,2.3601,open,Europe/Paris,
+RIO00,Maracana Stadium,,-22.9121,-43.2302,open,America/Sao_Paulo,
+SAO00,Arena Corinthians,,-23.5453,-46.4742,open,America/Sao_Paulo,

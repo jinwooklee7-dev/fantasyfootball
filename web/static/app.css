@@ -1,0 +1,537 @@
+/* ffdash. Dense, legible, readable at 11am on a Sunday. */
+
+:root {
+  --bg: #fbfaf8;
+  --panel: #ffffff;
+  --ink: #1b1a17;
+  --muted: #6d6a63;
+  --line: #e4e0d8;
+  --accent: #2f6f4e;
+  --warn: #b4551f;
+  --danger: #a8322a;
+  --soft: #2f6f4e;
+  --tough: #a8322a;
+  --spark: #8a857a;
+  --radius: 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14150f;
+    --panel: #1c1e17;
+    --ink: #eceadf;
+    --muted: #979284;
+    --line: #2d3027;
+    --accent: #7dc79b;
+    --warn: #e4a06a;
+    --danger: #e08a80;
+    --soft: #7dc79b;
+    --tough: #e08a80;
+    --spark: #8b9382;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #14150f;
+  --panel: #1c1e17;
+  --ink: #eceadf;
+  --muted: #979284;
+  --line: #2d3027;
+  --accent: #7dc79b;
+  --warn: #e4a06a;
+  --danger: #e08a80;
+  --soft: #7dc79b;
+  --tough: #e08a80;
+  --spark: #8b9382;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+main {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 20px 16px 48px;
+}
+
+/* ------------------------------------------------------------- chrome */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.brand {
+  font-weight: 700;
+  letter-spacing: .02em;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.crumb { color: var(--muted); font-size: 13px; }
+
+.weeknav { display: flex; gap: 4px; flex-wrap: wrap; }
+
+.weeklink {
+  display: inline-block;
+  min-width: 26px;
+  text-align: center;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: none;
+  border: 1px solid transparent;
+}
+.weeklink:hover { border-color: var(--line); color: var(--ink); }
+.weeklink.on { background: var(--accent); color: var(--bg); font-weight: 600; }
+
+.footer {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 12px 16px 32px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.chip {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 1px 8px;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------- headings */
+
+h1 { font-size: 22px; margin: 4px 0 18px; font-weight: 650; }
+h2 { font-size: 14px; margin: 0; font-weight: 650; letter-spacing: .01em; }
+h3.team-head {
+  font-size: 13px;
+  margin: 16px 0 6px;
+  color: var(--muted);
+  font-weight: 650;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.matchup { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.matchup .team { font-size: 26px; font-weight: 700; letter-spacing: -.01em; }
+.matchup .at { color: var(--muted); font-size: 15px; font-weight: 400; }
+.matchup .kick { color: var(--muted); font-size: 14px; font-weight: 400; margin-left: 6px; }
+
+/* ------------------------------------------------------------- panels */
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px 16px 16px;
+  margin-bottom: 14px;
+}
+
+.panel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.stamp { font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+.muted { color: var(--muted); }
+.small { font-size: 12px; }
+.strong { font-weight: 650; }
+.r { text-align: right; }
+.empty { color: var(--muted); font-style: italic; margin: 8px 0; }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 760px) { .two-col { grid-template-columns: 1fr; } }
+
+/* ------------------------------------------------------------- line panel */
+
+.implied-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 16px;
+  align-items: center;
+}
+@media (max-width: 620px) {
+  .implied-row { grid-template-columns: 1fr 1fr; }
+  .line-meta { grid-column: 1 / -1; }
+}
+
+.implied {
+  text-align: center;
+  padding: 10px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.implied-team { font-size: 13px; color: var(--muted); font-weight: 600; }
+.implied-value { font-size: 34px; font-weight: 700; line-height: 1.1; letter-spacing: -.02em; }
+.implied-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+
+.line-meta { font-size: 13px; display: grid; gap: 3px; }
+.line-meta .k { color: var(--muted); display: inline-block; min-width: 52px; }
+.line-meta .v { font-weight: 600; }
+
+.movement { margin-top: 12px; font-size: 13px; }
+.movement summary { cursor: pointer; color: var(--muted); }
+
+/* ------------------------------------------------------------- weather */
+
+.wind-row { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+
+.wind-big { display: flex; align-items: baseline; gap: 6px; }
+.wind-value { font-size: 40px; font-weight: 700; line-height: 1; letter-spacing: -.02em; }
+.wind-unit { font-size: 14px; color: var(--muted); }
+.wind-dir { font-size: 18px; font-weight: 600; margin-left: 6px; }
+
+.wind-side { font-size: 13px; display: grid; gap: 3px; }
+.wind-side .k { color: var(--muted); display: inline-block; min-width: 52px; }
+.wind-side .v { font-weight: 600; }
+
+.wind-significant .wind-value, .wind-significant .wind-dir { color: var(--danger); }
+.wind-breezy .wind-value, .wind-breezy .wind-dir { color: var(--warn); }
+
+.weather-summary { margin: 10px 0 0; font-size: 14px; }
+.caveat {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--warn);
+  border-left: 2px solid var(--warn);
+  padding-left: 8px;
+}
+.sealed-line { margin: 4px 0; color: var(--muted); }
+
+/* ------------------------------------------------------------- tables */
+
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+th.r { text-align: right; }
+td { padding: 4px 6px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+
+td.pos {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 700;
+  width: 30px;
+  letter-spacing: .03em;
+}
+td.name a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--line); }
+td.name a:hover { border-bottom-color: var(--accent); }
+
+.mini { font-size: 12px; }
+.mini th, .mini td { padding: 3px 6px; }
+
+.slate td { padding: 7px 6px; }
+.go { color: var(--accent); text-decoration: none; font-size: 12px; white-space: nowrap; }
+
+/* ------------------------------------------------------------- injuries */
+
+table.injury td { padding: 3px 6px; }
+tr.nonskill td { opacity: .58; }
+td.body { font-size: 12px; color: var(--muted); }
+
+.pill {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+.pill-out { color: var(--danger); }
+.pill-doubtful { color: var(--danger); }
+.pill-questionable { color: var(--warn); }
+.pill-practice { color: var(--muted); }
+
+.prog-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  margin-right: 3px;
+  border: 1px solid var(--line);
+}
+.prog-dnp { background: var(--danger); border-color: var(--danger); }
+.prog-limited { background: var(--warn); border-color: var(--warn); }
+.prog-full { background: var(--accent); border-color: var(--accent); }
+.prog-none { background: transparent; }
+
+/* ------------------------------------------------------------- usage */
+
+/* Value and its sparkline share a cell: three fewer column gutters, and the
+   number sits next to its own trend instead of a column away from it. */
+td.metric, th.metric { white-space: nowrap; }
+td.metric .val { display: inline-block; min-width: 34px; text-align: right; }
+td.metric .spark { display: inline-block; vertical-align: middle; margin-left: 6px; }
+
+.spark-col { width: 70px; }
+.spark { display: block; overflow: visible; }
+.spark polyline { fill: none; stroke: var(--spark); stroke-width: 1.4; stroke-linejoin: round; stroke-linecap: round; }
+.spark circle { fill: var(--accent); }
+.spark-empty { color: var(--muted); font-size: 12px; }
+
+/* ------------------------------------------------------------- matchup */
+
+.rank { font-weight: 650; font-size: 12px; }
+.rank-soft { color: var(--soft); }
+.rank-tough { color: var(--tough); }
+.rank-mid { color: var(--muted); }
+
+.h2h { margin-top: 14px; }
+.h2h summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+.h2h-block { margin: 12px 0; }
+.h2h-block strong { font-size: 13px; }
+
+/* A one- or two-game defensive sample is not a trend. Say so visually. */
+tr.thin td { opacity: .55; }
+
+/* ------------------------------------------------------- team identity
+
+   Team colour is used as an accent -- a badge, a rule, a left border -- never
+   as a large background behind text. Several teams are near-black or near-white
+   and would fail contrast if they carried body copy. */
+
+.tlogo {
+  display: inline-block;
+  vertical-align: middle;
+  object-fit: contain;
+  flex: none;
+}
+
+/* Shown when no logo file has been cached for a team. */
+.tlogo-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .02em;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, .45);
+}
+
+.tteam { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.tteam .tabbr {
+  font-weight: 650;
+  border-bottom: 2px solid var(--team);
+  padding-bottom: 1px;
+}
+
+/* Matchup heading on the game page. */
+.matchup .team { display: inline-flex; align-items: center; gap: 9px; }
+.matchup .tname {
+  border-bottom: 3px solid var(--team);
+  padding-bottom: 2px;
+  line-height: 1.1;
+}
+
+/* Panel sub-headings carry the team's colour as a left rule. */
+h3.team-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border-left: 3px solid var(--team, var(--line));
+  padding-left: 8px;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+h4.group-head {
+  margin: 14px 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ------------------------------------------------------- slate */
+
+.matchlink { text-decoration: none; color: var(--ink); display: inline-flex; align-items: center; gap: 8px; }
+.matchlink .vs { color: var(--muted); font-size: 12px; }
+.matchlink:hover .tabbr { color: var(--accent); }
+.final { margin-left: 10px; font-size: 12px; font-weight: 650; }
+.final .muted { font-weight: 400; }
+
+/* ------------------------------------------------------- navigation */
+
+.backlink {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+}
+.backlink:hover { text-decoration: underline; }
+
+.gamenav {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: -6px 0 14px;
+  font-size: 13px;
+}
+.gamenav a { color: var(--muted); text-decoration: none; }
+.gamenav a:hover { color: var(--accent); }
+
+/* ------------------------------------------------------- staleness */
+
+.chip-stale {
+  color: var(--danger);
+  border-color: var(--danger);
+  font-weight: 600;
+}
+.stale-note {
+  flex-basis: 100%;
+  margin-top: 6px;
+  color: var(--danger);
+}
+.stale-note code {
+  font-size: 11px;
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+/* CC-BY attribution. Quiet, but present on every page -- both upstream data
+   licences require it, and that is not optional once the site is shared. */
+.attribution {
+  flex-basis: 100%;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.attribution a { color: var(--muted); text-decoration: underline; }
+.attribution a:hover { color: var(--accent); }
+
+/* ------------------------------------------------------- availability
+
+   IR, inactives and game designations, shown beside the player's name. A back
+   on IR sitting mid-table with healthy usage numbers is the most expensive
+   thing to miss on this page, so it is loud on purpose. */
+
+.avail {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 4px;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  vertical-align: 1px;
+  white-space: nowrap;
+}
+.avail-out {
+  background: var(--danger);
+  color: #fff;
+}
+.avail-doubt {
+  background: color-mix(in srgb, var(--warn) 18%, transparent);
+  color: var(--warn);
+  border: 1px solid color-mix(in srgb, var(--warn) 45%, transparent);
+}
+.avail-note {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  font-weight: 700;
+}
+.avail-body {
+  font-weight: 500;
+  opacity: .85;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* Dim the whole row, but never the flag itself. */
+tr.unavailable td { opacity: .5; }
+tr.unavailable td.name { opacity: 1; }
+tr.unavailable td.name a { opacity: .6; }
+
+/* Scoring format switch. */
+.scorenav { display: flex; gap: 3px; margin-left: auto; }
+.scorelink {
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--muted);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.scorelink:hover { color: var(--ink); }
+.scorelink.on { background: var(--accent); border-color: var(--accent); color: var(--bg); font-weight: 650; }
+
+/* Only the sparkline for the active scoring format is shown. All three are in
+   the markup so the switch needs no server round trip. */
+.spark-for { display: none; }
+body[data-scoring="ppr"]  .spark-ppr,
+body[data-scoring="half"] .spark-half,
+body[data-scoring="std"]  .spark-std { display: inline-block; vertical-align: middle; }
+
+.scorelink { font-family: inherit; cursor: pointer; background: var(--panel); }
+
+/* "missed wk 2" — history, not a current ruling, so it reads differently from
+   an OUT/IR flag. Amber outline rather than a solid red block. */
+.avail-missed {
+  background: transparent;
+  color: var(--warn);
+  border: 1px dashed color-mix(in srgb, var(--warn) 55%, transparent);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 650;
+}
+
+/* The injury panel is showing an older week than the game. Say so in the head. */
+.weekwarn {
+  margin-left: 8px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--warn);
+  text-transform: none;
+  letter-spacing: 0;
+}

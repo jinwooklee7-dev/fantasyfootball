@@ -1,0 +1,46 @@
+handle,tier,team_abbr,notes,verified_exists
+# ------------------------------------------------------------------------------
+# CANDIDATE LIST. Nothing here is trusted until you have looked at it yourself.
+# verified_exists=1 means the handle appeared in a real search result, NOT that the
+# account is active or authentic. Run scripts/validate_bluesky.py, then eyeball each
+# profile in a browser before marking it active in the DB.
+#
+# KNOWN IMPERSONATORS / DO NOT FOLLOW:
+#   adanschefter.bsky.social        typosquat of Schefter (note the "n"), identical bio
+#   adamschefter-mirror.bluesky.bot unofficial bot republishing his X posts
+#   blackadamschefter.bsky.social   parody account
+# ------------------------------------------------------------------------------
+#
+# --- national insiders (weakest tier on Bluesky; expect several to be dormant) ---
+fieldyates.bsky.social,national,,"ESPN. Best national follow for fantasy: posts designations + inactives",1
+adamschefter.bsky.social,national,,"ESPN. Real account exists — confirm it actually posts before relying on it",1
+diannarussini.bsky.social,national,,"The Athletic. Broke news here during the March 2025 X outage",1
+minakimes.bsky.social,national,,"ESPN. Analysis not newsbreaking. Curates a widely used NFL starter pack",1
+#
+# --- national insiders: handle unknown, look these up yourself ---
+,national,,"Ian Rapoport — now at ESPN alongside Schefter",0
+,national,,"Tom Pelissero — departed NFL Media in the ESPN talent overhaul",0
+,national,,"Mike Garafolo",0
+,national,,"Jeremy Fowler — ESPN",0
+#
+# --- aggregators (strongest tier: they echo X news within minutes) ---
+profootballtalk.bsky.social,aggregator,,"PFT. High volume, active as of 2026",1
+nflfantasynews.bsky.social,aggregator,,"Self-described: NFL injury + fantasy news from Rotoworld and insider posts",1
+insidenflnews.bsky.social,aggregator,,"Reposts Underdog and other sources",1
+fantasynflnews.bsky.social,aggregator,,"Appears to be same operator as insidenflnews — check for duplicate before adding both",1
+nflupdates.bsky.social,aggregator,,"Verify quality. Generic handles are also what impersonators choose",1
+#
+# --- beat writers (best tier for injury signal: they watch practice) ---
+salsports.bsky.social,beat,BUF,"Sal Capaccio, WGR550",1
+jessenewell.bsky.social,beat,KC,"Jesse Newell, The Athletic",1
+andrewcallahan.bsky.social,beat,NE,"Andrew Callahan",1
+tkyles39.bsky.social,beat,NE,"Taylor Kyles",1
+noadalzell.bsky.social,beat,NE,"Noa Dalzell",1
+#
+# Fill out the rest from Bluesky starter packs rather than by hand — they are queryable
+# via app.bsky.graph.getStarterPack. Mina Kimes curates one; others run 30 and 89
+# accounts. Target 1-2 beat writers per team you actually roster players from.
+#
+# --- injury specialists (weakest coverage: this crowd is mostly on IG/X/YouTube/TikTok) ---
+,specialist,,"Stephania Bell — ESPN physical therapist, the original of this genre",0
+,specialist,,"Jene Bramel — Footballguys",0

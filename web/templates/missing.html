@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}Not found · ffdash{% endblock %}
+{% block content %}
+  <h1>No such game</h1>
+  <p class="empty">Nothing stored for <code>{{ game_id }}</code>.</p>
+  <p><a href="{{ url('index') }}">Back to the slate</a></p>
+{% endblock %}

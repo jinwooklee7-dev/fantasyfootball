@@ -1,0 +1,99 @@
+name: Refresh and publish
+
+# Keeps the published site current. This replaces the cron entries in
+# deploy/crontab.example -- use one or the other, not both.
+#
+# COST NOTE: Actions minutes are free on a PUBLIC repository. On a private one
+# the free allowance is 2,000 minutes a month, and this workflow takes roughly
+# 2-4 minutes a run, so the Sunday schedule alone would eat a good chunk of it.
+# If the repo is private, thin the schedule out.
+
+on:
+  schedule:
+    # Hourly through the week: lines move, injuries land midweek.
+    - cron: '0 * * * *'
+    # Every 20 minutes through the Sunday game windows (14:00-23:59 UTC),
+    # which covers the 11:30am ET inactives window that actually matters.
+    - cron: '*/20 14-23 * * 0'
+  workflow_dispatch:        # run it by hand from the Actions tab
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - 'src/**'
+      - 'scripts/render_static.py'
+
+concurrency:
+  group: publish
+  cancel-in-progress: false   # let a running refresh finish; do not half-write
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      # The database carries state that cannot be re-fetched: injury_report
+      # accumulates one snapshot per run, which is what makes the Wed/Thu/Fri
+      # practice progression readable. A fresh database every run would lose it
+      # and make every refresh a slow full rebuild.
+      - name: Restore database
+        id: db-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            db/ffdash.db
+            db/nflverse_cache
+          key: ffdash-db-${{ github.run_id }}
+          restore-keys: ffdash-db-
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Refresh data
+        run: uv run scripts/refresh_all.py
+
+      - name: Run tests
+        run: uv run pytest -q
+
+      - name: Render site
+        env:
+          # A GitHub Pages project site lives at /<repo>/, so every link needs
+          # that prefix. Using a custom domain? Set this to "/".
+          FFDASH_BASE_URL: /${{ github.event.repository.name }}/
+          # Set to 1 to drop the NFL club logos for the initials badges.
+          FFDASH_PUBLIC: ${{ vars.FFDASH_PUBLIC }}
+        run: uv run scripts/render_static.py --out dist
+
+      - name: Save database
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            db/ffdash.db
+            db/nflverse_cache
+          key: ffdash-db-${{ github.run_id }}
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

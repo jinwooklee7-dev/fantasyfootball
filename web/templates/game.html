@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+{% import "macros.html" as m %}
+{% block title %}{{ away }} @ {{ home }} · ffdash{% endblock %}
+
+{% block topbar %}
+  {# The wordmark alone was not discoverable as "back to all 16 games". #}
+  <a class="backlink" href="{{ url('week', season=game.season, week=game.week) }}">
+    ← All Week {{ game.week }} games
+  </a>
+{% endblock %}
+
+{% block content %}
+
+<h1 class="matchup">
+  <span class="team" style="--team:{{ teams[away].color }}">
+    {{ m.badge(teams, away, 34) }}<span class="tname">{{ away }}</span>
+  </span>
+  <span class="at">at</span>
+  <span class="team" style="--team:{{ teams[home].color }}">
+    {{ m.badge(teams, home, 34) }}<span class="tname">{{ home }}</span>
+  </span>
+  <span class="kick">{{ game.kickoff_utc|eastern }}</span>
+</h1>
+
+{% if prev_game or next_game %}
+  <nav class="gamenav">
+    {% if prev_game %}
+      <a href="{{ url('game', game_id=prev_game.game_id) }}">← {{ prev_game.away_team }} @ {{ prev_game.home_team }}</a>
+    {% else %}<span></span>{% endif %}
+    {% if next_game %}
+      <a href="{{ url('game', game_id=next_game.game_id) }}">{{ next_game.away_team }} @ {{ next_game.home_team }} →</a>
+    {% endif %}
+  </nav>
+{% endif %}
+
+{# ---------------------------------------------------------- 1. LINE #}
+<section class="panel panel-line">
+  <div class="panel-head">
+    <h2>Line</h2>
+    {{ m.stamp(fresh, 'schedules', 'odds') }}
+  </div>
+
+  {% if odds %}
+    <div class="implied-row">
+      <div class="implied">
+        <div class="implied-team">{{ away }}</div>
+        <div class="implied-value">{{ odds.away_implied|num }}</div>
+        <div class="implied-label">implied total</div>
+      </div>
+      <div class="implied">
+        <div class="implied-team">{{ home }}</div>
+        <div class="implied-value">{{ odds.home_implied|num }}</div>
+        <div class="implied-label">implied total</div>
+      </div>
+      <div class="line-meta">
+        <div><span class="k">Spread</span> <span class="v">{{ spread_text }}</span></div>
+        <div><span class="k">Total</span> <span class="v">{{ odds.total_line|num }}</span></div>
+        <div class="muted small">{{ odds.source }}{% if odds.book %} · {{ odds.book }}{% endif %}</div>
+      </div>
+    </div>
+
+    {% if odds_history|length > 1 %}
+      <details class="movement">
+        <summary>Line movement ({{ odds_history|length }} captures)</summary>
+        <table class="mini">
+          <tr><th>when</th><th>spread</th><th>total</th></tr>
+          {% for h in odds_history %}
+            <tr>
+              <td class="muted">{{ h.captured_at|age }}</td>
+              <td>{{ h.spread_line|num }}</td>
+              <td>{{ h.total_line|num }}</td>
+            </tr>
+          {% endfor %}
+        </table>
+      </details>
+    {% endif %}
+  {% else %}
+    <p class="empty">No line posted yet.</p>
+  {% endif %}
+</section>
+
+{# ---------------------------------------------------------- 2. WEATHER #}
+{% if weather and not weather.applicable %}
+  <section class="panel panel-weather sealed">
+    <div class="panel-head">
+      <h2>Weather</h2>
+      {{ m.stamp(fresh, 'weather') }}
+    </div>
+    <p class="sealed-line">Roof closed — no weather impact.</p>
+  </section>
+{% elif weather %}
+  <section class="panel panel-weather wind-{{ wind_class }}">
+    <div class="panel-head">
+      <h2>Weather</h2>
+      {{ m.stamp(fresh, 'weather') }}
+    </div>
+    <div class="wind-row">
+      <div class="wind-big">
+        <span class="wind-value">{{ weather.wind_mph|num(0) }}</span>
+        <span class="wind-unit">mph</span>
+        <span class="wind-dir">{{ weather.wind_dir_deg|compass }}</span>
+      </div>
+      <div class="wind-side">
+        {# Forecast models sometimes return a gust below the sustained speed.
+           Showing "13 mph, gusts 10" reads as a data error, so only show a gust
+           that actually exceeds the sustained wind. #}
+        {% if weather.wind_gust_mph and weather.wind_mph
+              and weather.wind_gust_mph > weather.wind_mph %}
+          <div><span class="k">Gusts</span> <span class="v">{{ weather.wind_gust_mph|num(0) }} mph</span></div>
+        {% endif %}
+        <div><span class="k">Temp</span> <span class="v">{{ weather.temp_f|num(0) }}°F</span></div>
+        {% if weather.precip_prob is not none %}
+          <div><span class="k">Precip</span> <span class="v">{{ weather.precip_prob|num(0) }}%</span></div>
+        {% endif %}
+      </div>
+    </div>
+    <p class="weather-summary">{{ weather_summary }}</p>
+    {% if weather.conditions and 'retractable_unknown' in weather.conditions %}
+      <p class="caveat">Retractable roof — state unknown until gameday. Outdoor forecast shown.</p>
+    {% elif weather.conditions and 'roof_overhead_sides_open' in weather.conditions %}
+      <p class="caveat">Roof overhead but sides open — wind reaches the field, rain largely does not.</p>
+    {% endif %}
+    <p class="muted small">
+      {{ game.stadium_name or 'venue unknown' }}
+      {% if not game.stadium_verified_at %} · coordinates unverified{% endif %}
+    </p>
+  </section>
+{% else %}
+  <section class="panel panel-weather">
+    <div class="panel-head"><h2>Weather</h2>{{ m.stamp(fresh, 'weather') }}</div>
+    {% if game.home_score is not none %}
+      {# Forecasts are only fetched ahead of kickoff, so a played game will
+         never acquire one. Saying "not yet" would be a promise we do not keep. #}
+      <p class="empty">Game already played — no forecast was captured.</p>
+    {% else %}
+      <p class="empty">No forecast stored for this game yet.</p>
+    {% endif %}
+  </section>
+{% endif %}
+
+{# ---------------------------------------------------------- 3. INJURIES #}
+<section class="panel panel-injury">
+  <div class="panel-head">
+    <h2>Injuries
+      {% if injury_week_is_stale %}
+        <span class="weekwarn">week {{ injury_week }} — no week {{ game.week }} report published yet</span>
+      {% endif %}
+    </h2>
+    {{ m.stamp(fresh, 'injuries') }}
+  </div>
+  <div class="two-col">
+    {% for team in [away, home] %}
+      <div class="col">
+        <h3 class="team-head" style="--team:{{ teams[team].color }}">
+          {{ m.badge(teams, team, 18) }} {{ teams[team].nick }}
+        </h3>
+        {% set rows = injuries_by_team.get(team, []) %}
+        {% if rows %}
+          <table class="injury">
+            {% for r in rows %}
+              <tr class="{{ 'skill' if r.position in ['QB','RB','WR','TE'] else 'nonskill' }}">
+                <td class="pos">{{ r.position or '—' }}</td>
+                <td class="name">
+                  <a href="{{ url('player', player_id=r.player_id) }}">{{ r.display_name }}</a>
+                  {{ m.missed_pill(r.missed) }}
+                </td>
+                <td class="body">{{ r.body_part or '' }}</td>
+                <td class="status">{{ m.avail_pill(r.avail) or m.status_pill(r.game_status, r.practice_status) }}</td>
+                <td class="prog">
+                  {% for p in r.progression %}
+                    <span class="prog-dot prog-{{ (p.practice_status or 'none')|lower }}"
+                          title="{{ p.report_date }}: {{ p.practice_status or 'no status' }}"></span>
+                  {% endfor %}
+                </td>
+              </tr>
+            {% endfor %}
+          </table>
+        {% else %}
+          <p class="empty">No injury report rows.</p>
+        {% endif %}
+
+        {# Players who cannot play but are absent from the injury report --
+           almost always IR, which the feed drops rather than flags. Without
+           this block they read as perfectly healthy. #}
+        {% set gone = unavailable_by_team.get(team, []) %}
+        {% if gone %}
+          <h4 class="group-head">Not available — not on the report</h4>
+          <table class="injury">
+            {% for r in gone %}
+              <tr class="unavailable">
+                <td class="pos">{{ r.position or '—' }}</td>
+                <td class="name">
+                  <a href="{{ url('player', player_id=r.player_id) }}">{{ r.display_name }}</a>
+                </td>
+                <td class="status">{{ m.avail_pill(r.avail) }}</td>
+              </tr>
+            {% endfor %}
+          </table>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+  <p class="muted small">
+    Practice dots are one per snapshot taken, oldest first. IR and inactive
+    status come from the weekly roster, not the injury report — a player placed
+    on IR disappears from the report entirely. “Missed wk N” means he did not
+    play that week, whatever his status reads today.
+  </p>
+</section>
+
+{# ---------------------------------------------------------- 4. USAGE #}
+<section class="panel panel-usage">
+  <div class="panel-head">
+    <h2>Usage <span class="muted small">trailing {{ weeks }} weeks</span></h2>
+    {{ m.stamp(fresh, 'snaps') }}
+  </div>
+
+  {% for team in [away, home] %}
+    <h3 class="team-head" style="--team:{{ teams[team].color }}">
+      {{ m.badge(teams, team, 18) }} {{ teams[team].nick }}
+    </h3>
+    {% set groups = usage.get(team, []) %}
+    {% if groups %}
+      {% for key, label, players in groups %}
+        <h4 class="group-head">{{ label }}</h4>
+        {{ m.usage_group(key, players) }}
+      {% endfor %}
+    {% else %}
+      <p class="empty">No usage recorded in the trailing window.</p>
+    {% endif %}
+  {% endfor %}
+  <p class="muted small">
+    Red zone counts read “—” when the play-by-play feed for that team-week has no
+    red zone plays at all — that is missing data, not zero usage.
+  </p>
+</section>
+
+{# ---------------------------------------------------------- 5. MATCHUP #}
+<section class="panel panel-matchup">
+  <div class="panel-head">
+    <h2>Matchup <span class="muted small">defence allowed, trailing {{ weeks }} weeks</span></h2>
+    {{ m.stamp(fresh, 'player_stats', 'stats') }}
+  </div>
+  <div class="two-col">
+    {% for team, opponent in [(away, home), (home, away)] %}
+      <div class="col">
+        <h3 class="team-head" style="--team:{{ teams[team].color }}">
+          {{ m.badge(teams, team, 18) }} {{ team }} offence
+          <span class="muted">vs</span>
+          {{ m.badge(teams, opponent, 18) }} {{ opponent }} defence
+        </h3>
+        {% set rows = defense[opponent] %}
+        {% if rows %}
+          <table class="mini def">
+            <tr><th>pos</th><th class="r">PPR allowed/g</th><th class="r">rank</th><th class="r">gms</th></tr>
+            {% for d in rows %}
+              <tr{% if d.games and d.games < 3 %} class="thin"{% endif %}>
+                <td>{{ d.pos }}</td>
+                <td class="r">{{ d.ppr_allowed_pg|num }}</td>
+                <td class="r">
+                  {% if d.rank_generous %}
+                    <span class="rank rank-{{ 'soft' if d.rank_generous <= 10 else ('tough' if d.rank_generous >= d.n_defenses - 9 else 'mid') }}">
+                      {{ d.rank_generous }}/{{ d.n_defenses }}
+                    </span>
+                  {% else %}—{% endif %}
+                </td>
+                <td class="r muted">{{ d.games|num }}</td>
+              </tr>
+            {% endfor %}
+          </table>
+        {% else %}
+          <p class="empty">Not enough games in the window.</p>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+  <p class="muted small">
+    Rank 1 = most generous to that position over the window. Rows greyed out are
+    a sample of fewer than three games — early in the season that is most of them.
+  </p>
+
+  <details class="h2h">
+    <summary>Career head-to-head (ranked below usage on purpose)</summary>
+    <p class="muted small">
+      Rosters and schemes turn over, so this is close to noise next to usage.
+      It is here because it is occasionally interesting.
+    </p>
+    {% for team, opponent in [(away, home), (home, away)] %}
+      {% for p in usage.get(team, []) %}
+        {% if p.h2h %}
+          <div class="h2h-block">
+            <strong>{{ p.display_name }}</strong> <span class="muted">vs {{ opponent }}</span>
+            <table class="mini">
+              <tr><th>season</th><th>wk</th><th class="r">tgt</th><th class="r">rec yd</th><th class="r">car</th><th class="r">rush yd</th><th class="r">ppr</th></tr>
+              {% for h in p.h2h %}
+                <tr>
+                  <td>{{ h.season }}</td><td>{{ h.week }}</td>
+                  <td class="r">{{ h.targets|num }}</td>
+                  <td class="r">{{ h.receiving_yards|num }}</td>
+                  <td class="r">{{ h.carries|num }}</td>
+                  <td class="r">{{ h.rushing_yards|num }}</td>
+                  <td class="r">{{ h.fantasy_ppr|num }}</td>
+                </tr>
+              {% endfor %}
+            </table>
+          </div>
+        {% endif %}
+      {% endfor %}
+    {% endfor %}
+  </details>
+</section>
+
+{% endblock %}

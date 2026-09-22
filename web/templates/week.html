@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% import "macros.html" as m %}
+{% block title %}Week {{ week }} · ffdash{% endblock %}
+
+{% block topbar %}
+  <nav class="weeknav">
+    {% for w in weeks %}
+      <a class="weeklink {{ 'on' if w == week else '' }}"
+         href="{{ url('week', season=season, week=w) }}">{{ w }}</a>
+    {% endfor %}
+  </nav>
+{% endblock %}
+
+{% block content %}
+<h1>Week {{ week }} <span class="muted">{{ season }}</span></h1>
+
+{% if games %}
+  <table class="slate">
+    <thead>
+      <tr>
+        <th>kickoff</th><th>matchup</th>
+        <th class="r">spread</th><th class="r">total</th>
+        <th class="r">implied away</th><th class="r">implied home</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for g in games %}
+        <tr>
+          <td class="muted">{{ g.kickoff_utc|eastern }}</td>
+          <td class="name">
+            <a class="matchlink" href="{{ url('game', game_id=g.game_id) }}">
+              {{ m.team_tag(teams, g.away_team) }}
+              <span class="vs">@</span>
+              {{ m.team_tag(teams, g.home_team) }}
+            </a>
+            {% if g.home_score is not none %}
+              <span class="final">
+                {{ g.away_score }}–{{ g.home_score }}
+                <span class="muted">final</span>
+              </span>
+            {% endif %}
+          </td>
+          <td class="r">{{ g.spread_text }}</td>
+          <td class="r">{{ g.total_line|num }}</td>
+          <td class="r">{{ g.away_implied|num }}</td>
+          <td class="r">{{ g.home_implied|num }}</td>
+          <td class="r"><a class="go" href="{{ url('game', game_id=g.game_id) }}">open →</a></td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p class="empty">No games stored for this week.</p>
+{% endif %}
+{% endblock %}

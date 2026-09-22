@@ -1,0 +1,17 @@
+.env
+db/*.db
+db/*.db-wal
+db/*.db-shm
+__pycache__/
+*.pyc
+.venv/
+data/validated.csv
+
+.pytest_cache/
+db/nflverse_cache/
+
+dist/
+
+# Team logos are club trademarks and are re-fetched by scripts/fetch_logos.py,
+# so there is no need to commit them into a public repository.
+web/static/logos/
