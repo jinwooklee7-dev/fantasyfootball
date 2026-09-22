@@ -69,6 +69,22 @@ Personal tool. Not a product. Prefer boring, debuggable code over abstraction.
   `ACT`, `RES` (injured reserve), `INA` (inactive), `DEV` (practice squad), `PUP`,
   `SUS`, `CUT`, `RET`, `EXE`. In 2026 Week 3 that is 253 players on RES, 79 of them
   skill positions.
+- **In-game injuries exist only in the play-by-play text.** A player who leaves a
+  game hurt appears in NO structured feed: the weekly report is published before
+  kickoff, roster status may not move to IR until midweek, and his snap count can
+  look ordinary if he went down late. The league writes it into `desc`:
+  `SEA-14-S.Darnold was injured during the play.` and
+  `** Injury Update: LAC-99-J.Caldwell has returned to the game.` He left the game
+  when no return follows the last injury. 89 such events in 2026 Weeks 1-2, 46 of
+  them players who did not return — including Jayden Daniels in Week 2, whose
+  roster status and injury report both read completely normal afterwards.
+  Play-by-play names players as `TEAM-NUMBER-I.Lastname`, which is not an id, so
+  resolution is on **(team, week, jersey number)** from the weekly roster. The
+  surname is compared only to verify, and a mismatch is reported rather than
+  guessed — attributing an injury to the wrong player is worse than missing one.
+  That check matters: matching the abbreviated `Ma.Wilson` against a roster's full
+  `Mack Wilson` rejected 149 of 151 real events until the comparison was fixed to
+  surname-against-surname.
 - **`INA` is the gameday inactives list**, and an earlier note here claiming inactives
   were unavailable was wrong. It is populated only for weeks that have been played —
   Weeks 1 and 2 of 2026 carry ~200 each, Week 3 (unplayed) carries none — which is the

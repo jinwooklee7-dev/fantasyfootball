@@ -33,6 +33,8 @@ STEPS = [
     ("ingest_depth_charts.py", ["--season"]),
     ("ingest_injuries.py", ["--season"]),
     ("ingest_rosters.py", ["--season"]),
+    # Needs rosters first: play-by-play names players by jersey number.
+    ("ingest_ingame_injuries.py", ["--season"]),
     ("ingest_nextgen.py", ["--season"]),
     ("ingest_weather.py", ["--season"]),
 ]

@@ -162,7 +162,7 @@
                 <td class="pos">{{ r.position or '—' }}</td>
                 <td class="name">
                   <a href="{{ url('player', player_id=r.player_id) }}">{{ r.display_name }}</a>
-                  {{ m.missed_pill(r.missed) }}
+                  {% if r.exit %}{{ m.exit_pill(r.exit) }}{% else %}{{ m.missed_pill(r.missed) }}{% endif %}
                 </td>
                 <td class="body">{{ r.body_part or '' }}</td>
                 <td class="status">{{ m.avail_pill(r.avail) or m.status_pill(r.game_status, r.practice_status) }}</td>
@@ -203,8 +203,9 @@
   <p class="muted small">
     Practice dots are one per snapshot taken, oldest first. IR and inactive
     status come from the weekly roster, not the injury report — a player placed
-    on IR disappears from the report entirely. “Missed wk N” means he did not
-    play that week, whatever his status reads today.
+    on IR disappears from the report entirely. “Missed wk N” means he did not play
+    that week; “left wk N hurt” means he played, went off injured and did not
+    return — which is parsed from play-by-play and appears in no other feed.
   </p>
 </section>
 

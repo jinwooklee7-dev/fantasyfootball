@@ -18,7 +18,7 @@ import pytest  # noqa: E402
 
 from ffdash.odds import describe_spread, implied_totals  # noqa: E402
 from ffdash.links import live_url, normalise_base, static_url  # noqa: E402
-from ffdash import scoring  # noqa: E402
+from ffdash import ingame, scoring  # noqa: E402
 from ffdash.queries import availability_flag, group_players, position_group  # noqa: E402
 from ffdash.timeutil import humanise_age, parse_utc, to_utc_iso  # noqa: E402
 from ffdash.weather import compass, roof_applicable, summarise, wind_severity  # noqa: E402
@@ -214,6 +214,73 @@ def test_body_part_is_carried_into_the_detail():
     flag = availability_flag({"game_status": "Questionable", "body_part": "Knee"})
     assert flag["body_part"] == "Knee"
     assert "Knee" in flag["detail"]
+
+
+# --------------------------------------------------------------- in-game injuries
+
+def test_parses_an_injury_out_of_a_play_description():
+    """Sam Darnold, 2026 Week 1. No other feed records this at all."""
+    desc = (
+        "(12:27) (Shotgun) 14-S.Darnold sacked at SEA 49 for -5 yards (5-D.Jones). "
+        "SEA-14-S.Darnold was injured during the play."
+    )
+    events = ingame.find_events(desc)
+    assert events == [("injured", "SEA", 14, "S.Darnold")]
+
+
+def test_parses_a_return_to_the_game():
+    desc = "** Injury Update: LAC-99-J.Caldwell has returned to the game."
+    assert ingame.find_events(desc) == [("returned", "LAC", 99, "J.Caldwell")]
+
+
+def test_one_play_can_carry_both_events():
+    desc = (
+        "7-J.Brissett pass incomplete. NE-24-A.Smith was injured during the play. "
+        "** Injury Update: LAC-99-J.Caldwell has returned to the game."
+    )
+    kinds = sorted(kind for kind, _t, _n, _p in ingame.find_events(desc))
+    assert kinds == ["injured", "returned"]
+
+
+def test_a_play_with_no_injury_yields_nothing():
+    assert ingame.find_events("(10:58) 7-J.Brissett left guard for 4 yards.") == []
+    assert ingame.find_events("") == []
+    assert ingame.find_events(None) == []
+
+
+def test_surname_matching_tolerates_the_abbreviations():
+    """The description abbreviates forenames and stretches to two letters when
+    a team has two players sharing an initial."""
+    assert ingame.desc_surname("S.Darnold") == "darnold"
+    assert ingame.desc_surname("Ma.Wilson") == "wilson"
+    assert ingame.desc_surname("D'A.Smith") == "smith"
+
+
+def test_roster_surname_drops_generational_suffixes():
+    assert ingame.roster_surname("Sam Darnold") == "darnold"
+    assert ingame.roster_surname("Velus Jones Jr.") == "jones"
+    assert ingame.roster_surname("Odell Beckham Jr") == "beckham"
+    assert ingame.roster_surname("Robert Griffin III") == "griffin"
+
+
+def test_surnames_agree_across_the_two_spellings():
+    """This comparison is the guard against attributing an injury to the wrong
+    player when a jersey number is reused or stale."""
+    for desc, roster in [
+        ("S.Darnold", "Sam Darnold"),
+        ("Ma.Wilson", "Mack Wilson"),
+        ("K.Coleman", "Keon Coleman"),
+        ("M.Humphrey", "Marlon Humphrey"),
+    ]:
+        assert ingame.desc_surname(desc) == ingame.roster_surname(roster)
+
+
+def test_left_the_game_requires_a_later_return():
+    # Injured on play 300, returned on play 420 -> he came back.
+    assert ingame.left_the_game(300, 420) is False
+    # Returned earlier in the game, then injured again -> he stayed off.
+    assert ingame.left_the_game(300, 120) is True
+    assert ingame.left_the_game(300, None) is True
 
 
 # --------------------------------------------------------------- scoring

@@ -535,3 +535,14 @@ body[data-scoring="std"]  .spark-std { display: inline-block; vertical-align: mi
   text-transform: none;
   letter-spacing: 0;
 }
+
+/* "left wk 2 hurt" — played, then walked off. The most decision-relevant of the
+   history markers, so it reads hotter than "missed wk N". */
+.avail-exit {
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+  color: var(--danger);
+  border: 1px solid color-mix(in srgb, var(--danger) 50%, transparent);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 700;
+}

@@ -154,6 +154,10 @@ def game_context(
     # matters even once his roster status flips back to active.
     missed = q.previous_absences(conn, season, week, (home, away))
 
+    # Left last week's game hurt and did not come back. Stronger and more
+    # specific than "did not play": no other feed records it at all.
+    exits = q.previous_ingame_exits(conn, season, week, (home, away))
+
     # Availability: IR, inactives, and the practice designations, keyed by
     # player. Attached to the usage rows so a player who cannot play does not
     # sit in the table looking like a viable start.
@@ -169,12 +173,14 @@ def game_context(
             p["h2h"] = q.head_to_head(conn, p["player_id"], opponent)
             p["avail"] = avail.get(p["player_id"])
             p["missed"] = missed.get(p["player_id"])
+            p["exit"] = exits.get(p["player_id"])
         apply_scoring(players, fmt)
         usage[team] = q.group_players(players)
 
     for row in injuries:
         row["avail"] = avail.get(row["player_id"])
         row["missed"] = missed.get(row["player_id"])
+        row["exit"] = exits.get(row["player_id"])
 
     # Anyone unavailable who is NOT on the injury report -- almost always an IR
     # player, whom the injury feed drops entirely. Without this they vanish.

@@ -49,7 +49,10 @@ uv run scripts/refresh_all.py     # catch everything up right now
    as a trend. **IR, inactive and OUT are flagged in red beside the player's
    name everywhere he appears**, including in the usage tables. A separate block
    lists players who cannot play but are absent from the injury report — almost
-   always IR, which the feed drops rather than flags.
+   always IR, which the feed drops rather than flags. Two history markers sit
+   beside the name where they matter most: **“left wk N hurt”** (played, went
+   off injured, never returned — parsed from play-by-play, in no other feed)
+   and **“missed wk N”** (did not play at all).
 4. **Usage** — trailing 4–6 weeks, split into three tables per team because the
    positions are not judged on the same things:
    - **Quarterbacks** — attempts, completion %, passing yards, TDs, INTs, plus

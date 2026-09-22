@@ -12,6 +12,8 @@ from __future__ import annotations
 
 import sqlite3
 
+from .db import table_exists
+
 # Positions that matter for start/sit. Ordered for display.
 SKILL_POSITIONS = ("QB", "RB", "WR", "TE", "FB", "K")
 POSITION_ORDER = {p: i for i, p in enumerate(SKILL_POSITIONS)}
@@ -408,6 +410,44 @@ def latest_injury_week(
         (season, upto_week),
     ).fetchone()
     return int(row[0]) if row and row[0] is not None else None
+
+
+def previous_ingame_exits(
+    conn: sqlite3.Connection, season: int, week: int, teams: tuple[str, ...]
+) -> dict[int, dict]:
+    """Players who left the most recent game injured and did not return.
+
+    Distinct from not playing at all. A starter who walks off in the second
+    quarter still has a full-looking stat line and a normal roster status, and
+    no other feed records it -- the weekly report is published before kickoff,
+    and IR may not follow until Wednesday. Parsed from play-by-play by
+    scripts/ingest_ingame_injuries.py.
+    """
+    if not teams or week <= 1:
+        return {}
+    if not table_exists(conn, "ingame_injury"):
+        return {}
+    marks = ", ".join("?" for _ in teams)
+    rows = conn.execute(
+        f"""
+        SELECT g.player_id, g.week, g.returned, g.detail
+        FROM ingame_injury g
+        JOIN player p ON p.player_id = g.player_id
+        LEFT JOIN roster_status r
+               ON r.player_id = g.player_id AND r.season = g.season AND r.week = g.week
+        WHERE g.season = ? AND g.week = ? AND g.left_game = 1
+          AND COALESCE(r.team_abbr, p.current_team) IN ({marks})
+        """,
+        (season, week - 1, *teams),
+    ).fetchall()
+    return {
+        r["player_id"]: {
+            "week": r["week"],
+            "returned": bool(r["returned"]),
+            "detail": r["detail"],
+        }
+        for r in rows
+    }
 
 
 def previous_absences(

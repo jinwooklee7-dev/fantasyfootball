@@ -32,7 +32,7 @@ import argparse
 import nflreadpy as nfl
 
 from ffdash.config import current_season
-from ffdash.db import session, upsert
+from ffdash.db import ensure_columns, session, upsert
 from ffdash.ingestlog import logged
 from ffdash.nflsource import clean_int, clean_str, fetch
 from ffdash.players import Crosswalk
@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS roster_status (
   status      TEXT,          -- ACT | RES | INA | DEV | PUP | SUS | CUT | RET | EXE
   status_abbr TEXT,          -- league's finer-grained code, e.g. R48
   depth_pos   TEXT,
+  jersey      INTEGER,        -- needed to resolve players named in play-by-play
   updated_at  TEXT NOT NULL,
   PRIMARY KEY (player_id, season, week)
 )
@@ -64,6 +65,13 @@ def main() -> None:
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_roster_week "
             "ON roster_status(season, week, team_abbr)"
+        )
+        ensure_columns(conn, "roster_status", {"jersey": "INTEGER"})
+        # Play-by-play names players as TEAM-NUMBER-I.Lastname, so the jersey is
+        # the join key back to a real player id.
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_roster_jersey "
+            "ON roster_status(season, week, team_abbr, jersey)"
         )
 
         with logged(conn, "rosters") as run:
@@ -86,6 +94,7 @@ def main() -> None:
                         "status": clean_str(r.get("status")),
                         "status_abbr": clean_str(r.get("status_description_abbr")),
                         "depth_pos": clean_str(r.get("depth_chart_position")),
+                        "jersey": clean_int(r.get("jersey_number")),
                         "updated_at": now,
                     }
                 )

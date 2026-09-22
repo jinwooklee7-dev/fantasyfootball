@@ -43,6 +43,11 @@ PATH=/usr/local/bin:/usr/bin:/bin
 # the feed entirely. This is the only source for that, and for the inactives.
 20 8 * * *    cd $FFDASH && uv run scripts/ingest_rosters.py >> logs/rosters.log 2>&1
 
+# --- in-game injuries: who walked off and never came back --------------------
+# Parsed from play-by-play, so it must follow the rosters pull (it resolves
+# players by jersey number). Nothing else records this at all.
+45 8 * * *    cd $FFDASH && uv run scripts/ingest_ingame_injuries.py >> logs/ingame.log 2>&1
+
 # Sunday inactives window: the list lands ~90 minutes before kickoff, so sweep
 # it through the late morning and early afternoon ET.
 */20 15-21 * * 0  cd $FFDASH && uv run scripts/ingest_rosters.py >> logs/rosters.log 2>&1

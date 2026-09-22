@@ -243,12 +243,27 @@
   {%- endif -%}
 {% endmacro %}
 
-{# Player name plus whatever is wrong with him. #}
+{# "left wk 2 hurt" — he played, then walked off and never came back. No other
+   feed records this: the weekly report is published before kickoff and IR may
+   not follow until Wednesday, so his stat line and roster status both look
+   ordinary. Parsed out of the play-by-play. #}
+{% macro exit_pill(exit) %}
+  {%- if exit -%}
+    <span class="avail avail-exit" title="{{ exit.detail }}">
+      left wk {{ exit.week }} hurt
+    </span>
+  {%- endif -%}
+{% endmacro %}
+
+{# Player name plus whatever is wrong with him, worst first. #}
 {% macro player_name(p) %}
   <a href="{{ url('player', player_id=p.player_id) }}">{{ p.display_name }}</a>
   {{ avail_pill(p.avail) }}
   {%- if not (p.avail and p.avail.severity == 'out') -%}
-    {{ missed_pill(p.missed) }}
+    {# Leaving a game is the more specific fact, so it wins over "did not play". #}
+    {%- if p.exit -%}{{ exit_pill(p.exit) }}
+    {%- else -%}{{ missed_pill(p.missed) }}
+    {%- endif -%}
   {%- endif -%}
 {% endmacro %}
 
