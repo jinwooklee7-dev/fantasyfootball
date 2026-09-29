@@ -108,6 +108,13 @@ def main() -> None:
         )
         if added:
             print(f"added team columns: {', '.join(added)}")
+        added = ensure_columns(
+            conn,
+            "player_week_stat",
+            {"fumbles_lost": "INTEGER", "two_pt": "INTEGER"},
+        )
+        if added:
+            print(f"added stat columns: {', '.join(added)}")
         conn.commit()
         print(f"schema applied to {db_path()}")
 

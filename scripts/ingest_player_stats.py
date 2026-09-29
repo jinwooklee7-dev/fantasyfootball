@@ -111,6 +111,13 @@ def red_zone_touches(
     return out, covered, warnings
 
 
+def _total(row: dict, *columns: str) -> int | None:
+    """Sum several count columns, or None when none of them is present."""
+    values = [clean_int(row.get(c)) for c in columns]
+    present = [v for v in values if v is not None]
+    return sum(present) if present else None
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--season", type=int, default=None)
@@ -164,6 +171,20 @@ def main() -> None:
                         "passing_yards": clean_float(r.get("passing_yards")),
                         "passing_tds": clean_int(r.get("passing_tds")),
                         "interceptions": clean_int(r.get("passing_interceptions")),
+                        # Summed across the three ways each can happen, because
+                        # league scoring treats them identically.
+                        "fumbles_lost": _total(
+                            r,
+                            "sack_fumbles_lost",
+                            "rushing_fumbles_lost",
+                            "receiving_fumbles_lost",
+                        ),
+                        "two_pt": _total(
+                            r,
+                            "passing_2pt_conversions",
+                            "rushing_2pt_conversions",
+                            "receiving_2pt_conversions",
+                        ),
                         "target_share": clean_float(r.get("target_share")),
                         "air_yards_share": clean_float(r.get("air_yards_share")),
                         "rz_touches": touches.get("rz"),

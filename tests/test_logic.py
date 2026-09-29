@@ -18,7 +18,7 @@ import pytest  # noqa: E402
 
 from ffdash.odds import describe_spread, implied_totals  # noqa: E402
 from ffdash.links import live_url, normalise_base, static_url  # noqa: E402
-from ffdash import ingame, scoring  # noqa: E402
+from ffdash import ingame, scoring, sleeper  # noqa: E402
 from ffdash.queries import availability_flag, group_players, position_group  # noqa: E402
 from ffdash.timeutil import humanise_age, parse_utc, to_utc_iso  # noqa: E402
 from ffdash.weather import compass, roof_applicable, summarise, wind_severity  # noqa: E402
@@ -319,6 +319,75 @@ def test_format_names_are_forgiving_and_default_safely():
     assert scoring.normalise("standard") == "std"
     assert scoring.normalise("nonsense") == "ppr"
     assert scoring.normalise(None) == "ppr"
+
+
+# --------------------------------------------------------------- league scoring
+
+# Bowers' Castle, the real league this was built against.
+LEAGUE = {
+    "pass_yd": 0.04, "pass_td": 5.0, "pass_int": -2.0,
+    "rush_yd": 0.1, "rush_td": 6.0,
+    "rec": 1.0, "rec_yd": 0.1, "rec_td": 6.0,
+    "bonus_rec_te": 0.75, "fum_lost": -2.0, "pass_2pt": 2.0,
+}
+
+
+def test_five_point_passing_touchdowns():
+    """nflverse assumes four. A four-touchdown game is four points adrift,
+    which is the difference between starting a quarterback and benching him."""
+    stat = {"passing_yards": 300.0, "passing_tds": 4, "interceptions": 0}
+    assert sleeper.score(stat, LEAGUE, "QB") == pytest.approx(12.0 + 20.0)
+
+
+def test_tight_end_premium_applies_only_to_tight_ends():
+    stat = {"receptions": 10, "receiving_yards": 100.0, "receiving_tds": 1}
+    te = sleeper.score(stat, LEAGUE, "TE")
+    wr = sleeper.score(stat, LEAGUE, "WR")
+    assert te - wr == pytest.approx(7.5)      # 10 receptions x 0.75
+    assert wr == pytest.approx(10 + 10 + 6)
+
+
+def test_running_backs_and_receivers_match_plain_ppr():
+    """Nothing in this league changes them, so they must not move."""
+    stat = {"carries": 20, "rushing_yards": 100.0, "rushing_tds": 1,
+            "receptions": 4, "receiving_yards": 30.0}
+    assert sleeper.score(stat, LEAGUE, "RB") == pytest.approx(10 + 6 + 4 + 3)
+
+
+def test_turnovers_subtract():
+    stat = {"passing_yards": 250.0, "passing_tds": 1, "interceptions": 2,
+            "fumbles_lost": 1}
+    assert sleeper.score(stat, LEAGUE, "QB") == pytest.approx(10.0 + 5.0 - 4.0 - 2.0)
+
+
+def test_no_stat_line_scores_nothing_rather_than_zero():
+    """A player who did not play must read as a dash, not a real zero."""
+    assert sleeper.score({}, LEAGUE, "WR") is None
+    assert sleeper.score(None, LEAGUE, "WR") is None
+
+
+def test_unsupported_settings_are_reported_not_ignored():
+    """A league rule we do not implement must surface, because scoring it as
+    zero would be quietly wrong."""
+    assert sleeper.unsupported_settings(LEAGUE) == []
+    odd = dict(LEAGUE, bonus_rush_yd_100=3.0)
+    assert "bonus_rush_yd_100" in sleeper.unsupported_settings(odd)
+
+
+def test_kicker_and_defence_settings_are_not_flagged():
+    """Every league carries them; they are irrelevant to a skill start/sit."""
+    noisy = dict(LEAGUE, fgm_40_49=4.0, pts_allow_0=10.0, sack=1.0, def_st_td=6.0)
+    assert sleeper.unsupported_settings(noisy) == []
+
+
+def test_describe_names_what_is_unusual():
+    text = sleeper.describe(LEAGUE)
+    assert "full PPR" in text and "5pt pass TD" in text and "TE premium" in text
+
+
+def test_superflex_detected():
+    assert sleeper.is_superflex(["QB", "RB", "FLEX", "SUPER_FLEX", "BN"]) is True
+    assert sleeper.is_superflex(["QB", "RB", "WR", "TE", "FLEX"]) is False
 
 
 # --------------------------------------------------------------- links

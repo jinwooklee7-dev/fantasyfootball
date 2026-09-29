@@ -79,6 +79,8 @@ CREATE TABLE IF NOT EXISTS player_week_stat (
   carries        INTEGER, rushing_yards REAL, rushing_tds INTEGER,
   attempts       INTEGER, completions INTEGER, passing_yards REAL, passing_tds INTEGER,
   interceptions  INTEGER,
+  fumbles_lost   INTEGER,      -- needed for league-exact scoring
+  two_pt         INTEGER,      -- pass + rush + rec two-point conversions
   target_share   REAL, air_yards_share REAL,
   rz_touches     INTEGER, inside10_touches INTEGER,
   fantasy_ppr    REAL,
