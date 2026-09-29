@@ -6,7 +6,7 @@ commands you will actually use on `fantasyfootball`, and skips the rest.
 Run everything from the project folder:
 
 ```bash
-cd "C:\Users\jinwo\Desktop\Claude\Jin's Claude\ffdash"
+cd "C:\Users\jinwo\Desktop\Claude\fantasy-football"
 ```
 
 ## What git is doing

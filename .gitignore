@@ -15,3 +15,10 @@ dist/
 # Team logos are club trademarks and are re-fetched by scripts/fetch_logos.py,
 # so there is no need to commit them into a public repository.
 web/static/logos/
+
+# The original handoff material (the zip and its contents), kept locally as
+# provenance. Deliberately NOT committed: spec/CLAUDE.md is the original
+# 101-line version, while the live CLAUDE.md at the repo root has grown to
+# ~197 lines with everything verified since. Two copies in the repo would make
+# it ambiguous which one is authoritative.
+spec/
