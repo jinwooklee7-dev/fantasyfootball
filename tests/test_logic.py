@@ -18,7 +18,7 @@ import pytest  # noqa: E402
 
 from ffdash.odds import describe_spread, implied_totals  # noqa: E402
 from ffdash.links import live_url, normalise_base, static_url  # noqa: E402
-from ffdash import ingame, scoring, sleeper  # noqa: E402
+from ffdash import ingame, names, scoring, sleeper  # noqa: E402
 from ffdash.queries import availability_flag, group_players, position_group  # noqa: E402
 from ffdash.timeutil import humanise_age, parse_utc, to_utc_iso  # noqa: E402
 from ffdash.weather import compass, roof_applicable, summarise, wind_severity  # noqa: E402
@@ -452,3 +452,57 @@ def test_naive_datetimes_are_assumed_utc():
 def test_humanise_age_handles_missing():
     assert humanise_age(None) == "never"
     assert humanise_age("not a timestamp") == "never"
+
+
+# --------------------------------------------------------------- name matching
+
+def test_generational_suffixes_are_not_surnames():
+    """Every "Jr." matched every other "Jr." until this was fixed."""
+    assert names.surname("Clarence Hill Jr.") == "hill"
+    assert names.surname("Paul Dehner Jr.") == "dehner"
+    assert names.surname("Velus Jones Jr.") == "jones"
+    assert names.surname("Robert Griffin III") == "griffin"
+
+
+def test_same_person_rejects_the_real_false_matches():
+    """Each of these was scored STRONG or LIKELY by the first version of the
+    beat-writer matcher, because followers and domain verification could
+    outvote the identity check."""
+    for claimed, candidate in [
+        ("Clarence Hill Jr.", "Edward Ongweso Jr"),
+        ("Paul Dehner Jr.", "Edward Ongweso Jr"),
+        ("John Keim", "John Burn-Murdoch"),
+        ("John Shipley", "John Burn-Murdoch"),
+        ("Mike Klis", "Mike Golic Jr"),
+        ("Mike Chappell", "Mike Golic Jr"),
+        ("Tim Twentyman", "Tim Walz"),
+        ("Alec Lewis", "Lewis Goodall"),
+        ("Kelsey Conway", "George Conway"),
+        ("Greg Auman", "Greg Pak"),
+        ("Gregg Bell", "Andy Bell"),
+        ("Nick Suss", "Nick Baumgardner"),
+    ]:
+        assert not names.same_person(claimed, candidate), (claimed, candidate)
+
+
+def test_same_person_accepts_the_real_ones():
+    for claimed, candidate in [
+        ("Mike Reiss", "Mike Reiss"),
+        ("Jourdan Rodrigue", "Jourdan Rodrigue"),
+        ("Sal Maiorana", "Sal Maiorana"),
+        ("Demetrius Harvey", "Demetrius Harvey"),
+        ("M. Reiss", "Mike Reiss"),
+    ]:
+        assert names.same_person(claimed, candidate), (claimed, candidate)
+
+
+def test_surname_alone_is_not_enough():
+    """One-word names cannot establish identity in either direction."""
+    assert not names.same_person("Reiss", "Mike Reiss")
+    assert not names.same_person("Mike Reiss", "Reiss")
+
+
+def test_nicknames_fail_closed():
+    """Mike/Michael does not match. A false negative costs one manual check;
+    a false positive puts a stranger's account in a feed you bet on."""
+    assert not names.same_person("Mike Klis", "Michael Klis")

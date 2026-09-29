@@ -19,37 +19,15 @@ from __future__ import annotations
 
 import re
 
+from .names import abbreviated_surname as desc_surname  # noqa: F401
+from .names import surname as roster_surname  # noqa: F401
+
 INJURED = re.compile(
     r"\b([A-Z]{2,3})-(\d{1,2})-([A-Za-z][A-Za-z.'\-]*)\s+was injured during the play"
 )
 RETURNED = re.compile(
     r"\b([A-Z]{2,3})-(\d{1,2})-([A-Za-z][A-Za-z.'\-]*)\s+has returned to the game"
 )
-
-# Generational suffixes sit where the surname would otherwise be.
-SUFFIXES = {"jr", "sr", "ii", "iii", "iv", "v"}
-
-
-def _tidy(text: str) -> str:
-    return text.strip().lower().replace("'", "").replace("-", "").replace(".", "")
-
-
-def desc_surname(fragment: str) -> str:
-    """'S.Darnold' -> 'darnold'; 'Ma.Wilson' -> 'wilson'.
-
-    Play-by-play abbreviates the forename, and stretches to two letters when a
-    team has two players sharing an initial.
-    """
-    return _tidy(fragment.split(".")[-1])
-
-
-def roster_surname(full_name: str) -> str:
-    """'Sam Darnold' -> 'darnold'; 'Velus Jones Jr.' -> 'jones'."""
-    parts = [p for p in _tidy(full_name).split() if p]
-    while len(parts) > 1 and parts[-1] in SUFFIXES:
-        parts.pop()
-    return parts[-1] if parts else ""
-
 
 def find_events(text: str) -> list[tuple[str, str, int, str]]:
     """Every injury event in one play description.

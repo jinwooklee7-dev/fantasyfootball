@@ -1,0 +1,27 @@
+# Accounts CONFIRMED BY THE USER, one per line. Nothing reaches social_account
+# without appearing here -- see CLAUDE.md: nothing auto-follows, and every
+# account is eyeballed by a person before it is trusted.
+#
+# Confirmed 2026-09-29: the 15 team beat writers below.
+# Each was checked to have a matching name, a bio naming the right team, and
+# posts within the last 30 days. Handles are re-resolved to DIDs at ingest,
+# because a handle can be renamed or squatted and a DID cannot.
+handle,tier,team_abbr,writer,notes
+salmaiorana.bsky.social,beat,BUF,Sal Maiorana,Rochester D&C
+daringantt.bsky.social,beat,CAR,Darin Gantt,team site
+kfishbain.bsky.social,beat,CHI,Kevin Fishbain,The Athletic; in Kimes NFL pack
+troyrenck.bsky.social,beat,DEN,Troy Renck,Denver7
+coltonpouncy.bsky.social,beat,DET,Colton Pouncy,The Athletic; low volume
+andyhermannfl.bsky.social,beat,GB,Andy Herman,Packers Talk
+aaronwilsonnfl.bsky.social,beat,HOU,Aaron Wilson,KPRC2
+demetrius.bsky.social,beat,JAX,Demetrius Harvey,Florida Times-Union; in Kimes NFL pack
+bynatetaylor.bsky.social,beat,KC,Nate Taylor,The Athletic; in Kimes NFL pack
+mattderrick.bsky.social,beat,KC,Matt Derrick,Chiefs Digest
+jessenewell.bsky.social,beat,KC,Jesse Newell,Kansas City Star
+jourdanrodrigue.bsky.social,beat,LA,Jourdan Rodrigue,The Athletic; in Kimes NFL pack
+paulhgutierrez.bsky.social,beat,LV,Paul Gutierrez,ESPN; in Kimes NFL pack
+schadjoe.bsky.social,beat,MIA,Joe Schad,Palm Beach Post
+bengoessling.bsky.social,beat,MIN,Ben Goessling,Star Tribune
+mikereiss.bsky.social,beat,NE,Mike Reiss,ESPN; in Kimes NFL pack
+ezlazar.bsky.social,beat,NE,Evan Lazar,CLNS Media
+nickunderhill.bsky.social,beat,NO,Nick Underhill,New Orleans Football; in Kimes NFL pack
