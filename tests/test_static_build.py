@@ -30,10 +30,27 @@ def pages():
     return found
 
 
-def test_no_broken_internal_links(pages):
+@pytest.fixture(scope="module")
+def base(pages):
+    """The base path this build was rendered with, read back off the page.
+
+    A GitHub Pages project site is served from /<repo>/, so links carry that
+    prefix while the files sit at the root of dist/. Inferring it from the
+    stylesheet link keeps the link check honest for both layouts, and doubles
+    as a check that the prefix was applied at all.
+    """
+    index = (DIST / "index.html").read_text(encoding="utf-8")
+    match = re.search(r'href="([^"]*?)static/app\.css"', index)
+    assert match, "index.html does not link the stylesheet"
+    return match.group(1) or "/"
+
+
+def test_no_broken_internal_links(pages, base):
     """The failure this catches is a link that 404s on one page in three
     hundred -- invisible until someone clicks it."""
     broken = Counter()
+    outside = Counter()
+    checked = 0
     for page in pages:
         for raw in ATTR.findall(page.read_text(encoding="utf-8")):
             if raw.startswith(("http://", "https://", "#", "mailto:", "data:")):
@@ -41,12 +58,27 @@ def test_no_broken_internal_links(pages):
             target = raw.split("#")[0].split("?")[0]
             if not target:
                 continue
-            candidate = DIST / target.lstrip("/")
-            if candidate.is_dir() or target.rstrip("/") == "":
+            if not target.startswith(base):
+                # A root-relative link that skips the base would 404 once the
+                # site is served from /<repo>/, which is the whole failure mode.
+                outside[raw] += 1
+                continue
+            checked += 1
+            relative = target[len(base):]
+            candidate = DIST / relative if relative else DIST / "index.html"
+            if candidate.is_dir():
                 candidate = candidate / "index.html"
             if not candidate.exists():
                 broken[raw] += 1
+    assert not outside, "links missing the base {!r}: {}".format(
+        base, outside.most_common(5)
+    )
     assert not broken, "broken links: {}".format(broken.most_common(10))
+    # A test that silently checks nothing is worse than no test: if the pages
+    # ever render without links, this should fail rather than pass quietly.
+    assert checked > len(pages), "only {} links across {} pages".format(
+        checked, len(pages)
+    )
 
 
 def test_landing_page_exists(pages):

@@ -68,12 +68,21 @@ jobs:
 
       - name: Render site
         env:
-          # A GitHub Pages project site lives at /<repo>/, so every link needs
-          # that prefix. Using a custom domain? Set this to "/".
-          FFDASH_BASE_URL: /${{ github.event.repository.name }}/
           # Set to 1 to drop the NFL club logos for the initials badges.
           FFDASH_PUBLIC: ${{ vars.FFDASH_PUBLIC }}
-        run: uv run scripts/render_static.py --out dist
+        run: |
+          # A GitHub Pages project site lives at /<repo>/, so every link needs
+          # that prefix. Derive it from GITHUB_REPOSITORY ("owner/repo"), which
+          # is set for every event type -- github.event.repository.name is
+          # populated on push but NOT on a schedule, and an empty value here
+          # would render all 900 pages with broken links and deploy them.
+          # Using a custom domain? Set BASE to "/".
+          BASE="/${GITHUB_REPOSITORY##*/}/"
+          echo "Rendering with base path: $BASE"
+          FFDASH_BASE_URL="$BASE" uv run scripts/render_static.py --out dist
+          # Fail loudly rather than publishing a site where nothing is clickable.
+          grep -q "href=\"$BASE" dist/index.html \
+            || { echo "::error::links missing base path $BASE"; exit 1; }
 
       - name: Save database
         if: always()
